@@ -3,6 +3,7 @@ import React from "react";
 import { StyleSheet, Text, View, TouchableWithoutFeedback } from "react-native";
 import { GLView } from "expo-gl";
 import { Renderer } from "expo-three";
+import { TweenMax } from "gsap";
 
 import {
   AmbientLight,
@@ -45,6 +46,7 @@ export default function App() {
     const { drawingBufferWidth: width, drawingBufferHeight: height } = gl;
 
     const renderer = new Renderer({ gl });
+    console.log("onGLContextCreate: ", width, height);
     renderer.setSize(width, height);
     renderer.setClearColor("#fff");
 
@@ -75,6 +77,7 @@ export default function App() {
     camera.lookAt(sphere.position);
 
     const renderGL = () => {
+      console.log("renderGL");
       requestAnimationFrame(renderGL);
       renderer.render(scene, camera);
       gl.endFrameEXP();
@@ -82,14 +85,30 @@ export default function App() {
 
     renderGL();
   };
+
+  const move = (distance) => {
+    TweenMax.to(sphere.position, 0.2, { z: sphere.position.z + distance });
+    TweenMax.to(camera.position.z, 0.2, { z: camera.position.z + distance });
+  };
+
   return (
     <View style={styles.container}>
-      <Text>Proof of Concept for RN with Three.js</Text>
+      <Text style={styles.headerText}>
+        Proof of Concept for RN with Three.js
+      </Text>
       <StatusBar style="auto" />
       <GLView
-        style={{ flex: 1 }}
+        style={{ flex: 1, backgroundColor: "rgba(255,0,0,0.3)" }}
         onContextCreate={async (gl) => onGLContextCreate(gl)}
       />
+      <View>
+        <TouchableWithoutFeedback onPressIn={() => move(-0.2)}>
+          <Text style={styles.buttonText}>UP</Text>
+        </TouchableWithoutFeedback>
+        <TouchableWithoutFeedback onPressIn={() => move(0.2)}>
+          <Text style={styles.buttonText}>Down</Text>
+        </TouchableWithoutFeedback>
+      </View>
     </View>
   );
 }
@@ -97,8 +116,13 @@ export default function App() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#fff",
-    alignItems: "center",
-    justifyContent: "center",
+    paddingTop: 50,
+  },
+  headerText: {
+    fontSize: 20,
+    textAlign: "center",
+  },
+  buttonText: {
+    fontSize: 36,
   },
 });
