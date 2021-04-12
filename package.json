@@ -14,9 +14,11 @@
     "expo-three": "^5.6.2",
     "expo-three-ar": "^0.0.0",
     "gsap": "^3.6.1",
+    "native-base": "^2.15.2",
     "react": "16.13.1",
     "react-dom": "16.13.1",
     "react-native": "https://github.com/expo/react-native/archive/sdk-40.0.1.tar.gz",
+    "react-native-elements": "^3.3.2",
     "react-native-web": "~0.13.12",
     "three": "0.108.0"
   },

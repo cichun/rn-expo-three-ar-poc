@@ -1,18 +1,10 @@
 import { StatusBar } from "expo-status-bar";
 import React from "react";
-import {
-  StyleSheet,
-  Text,
-  TouchableWithoutFeedback,
-  View,
-  Button,
-} from "react-native";
+import { StyleSheet, Text, View } from "react-native";
 import { GLView } from "expo-gl";
 import { Renderer, THREE } from "expo-three";
 import ExpoTHREE from "expo-three";
 import { TweenMax } from "gsap";
-import { Asset } from "expo-asset";
-import { OBJLoader } from "three/examples/jsm/loaders/OBJLoader";
 
 import {
   AmbientLight,
@@ -27,12 +19,15 @@ import {
   SpotLight,
 } from "three";
 
+import { rotationStep, moveStep } from "./AppConstants";
+import RotationControlGroup from "./components/RotationControlGroup";
+
 class SphereMesh extends Mesh {
   constructor() {
     const sphereGeom = new SphereGeometry(
       0,
       50,
-      20,
+      50,
       0,
       Math.PI * 2,
       0,
@@ -54,7 +49,6 @@ export default function App() {
 
   const onGLContextCreate = async (gl) => {
     const { drawingBufferWidth: width, drawingBufferHeight: height } = gl;
-
     const renderer = new Renderer({
       gl,
       width,
@@ -65,7 +59,7 @@ export default function App() {
 
     const scene = new Scene();
     scene.fog = new Fog("#3A96C4", 1, 10000);
-    scene.add(new GridHelper(10, 10));
+    scene.add(new GridHelper(15, 15));
 
     const ambientLight = new AmbientLight(0x101010);
     scene.add(ambientLight);
@@ -81,37 +75,12 @@ export default function App() {
 
     scene.add(sphere);
 
-    // obj
-    // const asset = new Asset.fromModule(require("./assets/teamugobj.obj"));
-    // await asset.downloadAsync();
-    // const loader = new OBJLoader();
-    // const object = await new Promise((res, rej) =>
-    //   loader.load(asset.localUri, res, () => {}, rej)
-    // );
-    // console.log("model loaded", object);
-    // object.position.set(1, 0, 0);
-
     object = await ExpoTHREE.loadAsync(
       [require("./assets/teamugobj.obj")],
-      // [require("./assets/Nesta_OBJ.obj")],
       null,
       (imageName) => resources[imageName]
     );
 
-    // object.position.set(234.2966, 252.9658, -1480.171);
-
-    // const object = await ExpoTHREE.loadAsync(
-    //   [require("./assets/teamugobj.obj"), require("./assets/Nesta_OBJ.obj")],
-    //   null,
-    //   (imageName) => resources[imageName]
-    // );
-
-    // object.computeVertexNormals();
-    // var material = new THREE.MeshStandardMaterial({
-    //   color: 0x0055ff,
-    //   flatShading: true,
-    // });
-    // var objectMesh = new THREE.Mesh(object, material);
     scene.add(object);
 
     camera.position.set(
@@ -123,7 +92,6 @@ export default function App() {
     camera.lookAt(sphere.position);
 
     const renderGL = () => {
-      // console.log("renderGL");
       requestAnimationFrame(renderGL);
       renderer.render(scene, camera);
       gl.endFrameEXP();
@@ -132,13 +100,7 @@ export default function App() {
     renderGL();
   };
 
-  const move = (distance) => {
-    // TweenMax.to(sphere.position, 0.2, { z: sphere.position.z + distance });
-    TweenMax.to(camera.position, 0.2, { z: camera.position.z + distance });
-  };
-
   const moveDiff = ({ x, y, z }) => {
-    // TweenMax.to(sphere.position, 0.2, { z: sphere.position.z + distance });
     TweenMax.to(camera.position, 2.2, {
       z: camera.position.z + z,
       x: camera.position.x + x,
@@ -147,9 +109,9 @@ export default function App() {
   };
   const rotateObject = ({ rotX = 0, rotY = 0, rotZ = 0 }) => {
     TweenMax.to(object.rotation, 0.2, {
-      x: object.rotation.x + rotX,
-      y: object.rotation.y + rotY,
-      z: object.rotation.z + rotZ,
+      x: object.rotation.x + (rotX * Math.PI) / 180,
+      y: object.rotation.y + (rotY * Math.PI) / 180,
+      z: object.rotation.z + (rotZ * Math.PI) / 180,
     });
   };
 
@@ -164,27 +126,39 @@ export default function App() {
         onContextCreate={async (gl) => onGLContextCreate(gl)}
       />
       <View>
-        <TouchableWithoutFeedback onPressIn={() => move(-20)}>
-          <Text style={styles.buttonText}>UP</Text>
-        </TouchableWithoutFeedback>
-        <TouchableWithoutFeedback onPressIn={() => move(20)}>
-          <Text style={styles.buttonText}>Down</Text>
-        </TouchableWithoutFeedback>
-
-        <TouchableWithoutFeedback
-          onPressIn={() => moveDiff({ x: -20, y: 0, z: 0 })}
-        >
-          <Text style={styles.buttonText}>Left</Text>
-        </TouchableWithoutFeedback>
-        <TouchableWithoutFeedback
-          onPressIn={() => moveDiff({ x: +20, y: 0, z: 0 })}
-        >
-          <Text style={styles.buttonText}>Right</Text>
-        </TouchableWithoutFeedback>
-        <Button
-          title={"Rotate X"}
-          onPress={() => rotateObject({ rotX: 0.1 })}
+        <RotationControlGroup
+          groupName={"Move"}
+          increaseFunc={() => moveDiff({ x: 0, y: 0, z: moveStep })}
+          increaseLabel={"Further"}
+          decreaseFunc={() => moveDiff({ x: 0, y: 0, z: -moveStep })}
+          decreaseLabel={"Closer"}
         />
+
+        <RotationControlGroup
+          groupName={"Shift"}
+          increaseFunc={() => moveDiff({ x: moveStep, y: 0, z: 0 })}
+          increaseLabel={"Right"}
+          decreaseFunc={() => moveDiff({ x: -moveStep, y: 0, z: 0 })}
+          decreaseLabel={"Left"}
+        />
+
+        <View style={{ paddingLeft: 50 }}>
+          <RotationControlGroup
+            groupName={"Rotate X"}
+            increaseFunc={() => rotateObject({ rotX: rotationStep })}
+            decreaseFunc={() => rotateObject({ rotX: -rotationStep })}
+          />
+          <RotationControlGroup
+            groupName={"Rotate Y"}
+            increaseFunc={() => rotateObject({ rotY: rotationStep })}
+            decreaseFunc={() => rotateObject({ rotY: -rotationStep })}
+          />
+          <RotationControlGroup
+            groupName={"Rotate Z"}
+            increaseFunc={() => rotateObject({ rotZ: rotationStep })}
+            decreaseFunc={() => rotateObject({ rotZ: -rotationStep })}
+          />
+        </View>
       </View>
     </View>
   );
